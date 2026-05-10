@@ -1,5 +1,7 @@
 package com.example.tokplayer
 
+import android.Manifest
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Bundle
 import android.provider.MediaStore
@@ -18,6 +20,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import androidx.media3.common.MediaItem
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
@@ -26,6 +30,20 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        if (
+            ContextCompat.checkSelfPermission(
+                this,
+                Manifest.permission.READ_MEDIA_VIDEO
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+
+            ActivityCompat.requestPermissions(
+                this,
+                arrayOf(Manifest.permission.READ_MEDIA_VIDEO),
+                1
+            )
+        }
 
         setContent {
             TikTokPlayer()
@@ -113,7 +131,7 @@ fun getAllVideos(context: android.content.Context): List<Uri> {
         projection,
         null,
         null,
-        null
+        MediaStore.Video.Media.DATE_ADDED + " DESC"
     )?.use { cursor ->
 
         val idColumn = cursor.getColumnIndexOrThrow(
