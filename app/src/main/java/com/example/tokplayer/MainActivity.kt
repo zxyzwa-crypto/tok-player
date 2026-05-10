@@ -1,4 +1,3 @@
-```kotlin
 package com.example.tokplayer
 
 import android.net.Uri
@@ -136,4 +135,3 @@ fun getAllVideos(context: android.content.Context): List<Uri> {
 
     return videoList
 }
-```
