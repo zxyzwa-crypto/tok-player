@@ -9,13 +9,17 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.pager.VerticalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
@@ -48,6 +52,10 @@ class MainActivity : ComponentActivity() {
         setContent {
             TikTokPlayer()
         }
+    }
+
+    override fun onPause() {
+        super.onPause()
     }
 }
 
@@ -84,10 +92,17 @@ fun VideoPage(uri: Uri, play: Boolean) {
 
     val context = LocalContext.current
 
+    var paused by remember {
+        mutableStateOf(false)
+    }
+
     val exoPlayer = remember {
+
         ExoPlayer.Builder(context).build().apply {
 
-            setMediaItem(MediaItem.fromUri(uri))
+            setMediaItem(
+                MediaItem.fromUri(uri)
+            )
 
             prepare()
 
@@ -95,24 +110,46 @@ fun VideoPage(uri: Uri, play: Boolean) {
         }
     }
 
-    LaunchedEffect(play) {
-        exoPlayer.playWhenReady = play
+    LaunchedEffect(play, paused) {
+
+        if (play && !paused) {
+
+            exoPlayer.play()
+
+        } else {
+
+            exoPlayer.pause()
+        }
     }
 
     DisposableEffect(Unit) {
+
         onDispose {
+
+            exoPlayer.pause()
+
             exoPlayer.release()
         }
     }
 
     AndroidView(
+
         factory = {
+
             PlayerView(it).apply {
+
                 player = exoPlayer
+
                 useController = false
             }
         },
-        modifier = Modifier.fillMaxSize()
+
+        modifier = Modifier
+            .fillMaxSize()
+            .clickable {
+
+                paused = !paused
+            }
     )
 }
 
@@ -120,18 +157,21 @@ fun getAllVideos(context: android.content.Context): List<Uri> {
 
     val videoList = mutableListOf<Uri>()
 
-    val collection = MediaStore.Video.Media.EXTERNAL_CONTENT_URI
+    val collection =
+        MediaStore.Video.Media.EXTERNAL_CONTENT_URI
 
     val projection = arrayOf(
         MediaStore.Video.Media._ID
     )
 
     context.contentResolver.query(
+
         collection,
         projection,
         null,
         null,
         MediaStore.Video.Media.DATE_ADDED + " DESC"
+
     )?.use { cursor ->
 
         val idColumn = cursor.getColumnIndexOrThrow(
@@ -143,6 +183,7 @@ fun getAllVideos(context: android.content.Context): List<Uri> {
             val id = cursor.getLong(idColumn)
 
             val contentUri = Uri.withAppendedPath(
+
                 MediaStore.Video.Media.EXTERNAL_CONTENT_URI,
                 id.toString()
             )
